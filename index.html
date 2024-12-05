@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker Compose YAML Generator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Docker Compose YAML Generator</h1>
+
+    <div id="container-form">
+      <div id="containers-list">
+        <!-- Dynamically added containers will appear here -->
+      </div>
+
+      <button type="button" id="add-container">Add Another Container</button>
+
+      <button id="generate-button">Generate YAML</button>
+    </div>
+
+    <h2>Generated YAML:</h2>
+    <pre id="yaml-output"></pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
