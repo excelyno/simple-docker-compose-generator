@@ -1,179 +1,250 @@
-// Helper function to create a new container form
-function createContainerForm() {
-    const containerList = document.getElementById('containers-list');
-  
-    const containerDiv = document.createElement('div');
-    containerDiv.classList.add('container-item');
-    
-    // Service Name
-    const serviceNameDiv = document.createElement('div');
-    serviceNameDiv.classList.add('form-group');
-    serviceNameDiv.innerHTML = `
-      <label for="service-name">Service Name:</label>
-      <input type="text" class="service-name" placeholder="Enter service name">
-    `;
-    
-    // Select Image
-    const imageDiv = document.createElement('div');
-    imageDiv.classList.add('form-group');
-    imageDiv.innerHTML = `
-      <label for="image">Select Image:</label>
-      <select class="image">
-        <option value="nginx:latest">Nginx</option>
-        <option value="mysql:latest">MySQL</option>
-        <option value="redis:latest">Redis</option>
-        <option value="node:latest">Node.js</option>
-        <option value="python:latest">Python</option>
-        <option value="alpine:latest">Alpine</option>
-      </select>
-    `;
-    
-    // Port Configuration
-    const portDiv = document.createElement('div');
-    portDiv.classList.add('form-group');
-    portDiv.innerHTML = `
-      <label for="port">Port Mapping:</label>
-      <input type="number" class="port" placeholder="Enter container port">
-      <input type="number" class="host-port" placeholder="Enter host port">
-    `;
-    
-    // Volume Configuration
-    const volumeDiv = document.createElement('div');
-    volumeDiv.classList.add('form-group');
-    volumeDiv.innerHTML = `
-      <label for="use-volume">Use Volume:</label>
-      <input type="checkbox" class="use-volume">
-      <div class="volume-options hidden">
-        <label for="volume-name">Volume Name:</label>
-        <input type="text" class="volume-name" placeholder="Enter volume name">
-      </div>
-    `;
-    
-    // Network Configuration
-    const networkDiv = document.createElement('div');
-    networkDiv.classList.add('form-group');
-    networkDiv.innerHTML = `
-      <label for="use-network">Use Network:</label>
-      <input type="checkbox" class="use-network">
-      <div class="network-options hidden">
-        <label for="network-name">Network Name:</label>
-        <input type="text" class="network-name" placeholder="Enter network name">
-      </div>
-    `;
-    
-    // Environment Variables
-    const envDiv = document.createElement('div');
-    envDiv.classList.add('form-group');
-    envDiv.innerHTML = `
-      <label for="env-vars">Environment Variables:</label>
-      <button type="button" class="add-env-var">Add Variable</button>
-      <div class="env-vars-container"></div>
-    `;
-    
-    // Command Override
-    const commandDiv = document.createElement('div');
-    commandDiv.classList.add('form-group');
-    commandDiv.innerHTML = `
-      <label for="command">Override Command:</label>
-      <input type="text" class="command" placeholder="Optional: Enter command to override">
-    `;
-    
-    // Remove Container Button
-    const removeButton = document.createElement('button');
-    removeButton.textContent = 'Remove Container';
-    removeButton.classList.add('remove-container');
-    removeButton.addEventListener('click', () => containerDiv.remove());
-  
-    containerDiv.appendChild(serviceNameDiv);
-    containerDiv.appendChild(imageDiv);
-    containerDiv.appendChild(portDiv);
-    containerDiv.appendChild(volumeDiv);
-    containerDiv.appendChild(networkDiv);
-    containerDiv.appendChild(envDiv);
-    containerDiv.appendChild(commandDiv);
-    containerDiv.appendChild(removeButton);
-    
-    containerList.appendChild(containerDiv);
-    
-    // Add event listeners to dynamically created elements
-    volumeDiv.querySelector('.use-volume').addEventListener('change', function() {
-      volumeDiv.querySelector('.volume-options').classList.toggle('hidden', !this.checked);
-    });
-    
-    networkDiv.querySelector('.use-network').addEventListener('change', function() {
-      networkDiv.querySelector('.network-options').classList.toggle('hidden', !this.checked);
-    });
-    
-    const addEnvVarButton = containerDiv.querySelector('.add-env-var');
-    addEnvVarButton.addEventListener('click', () => {
-      const envVarsContainer = containerDiv.querySelector('.env-vars-container');
-      const envVarDiv = document.createElement('div');
-      envVarDiv.classList.add('env-var-input');
-      envVarDiv.innerHTML = `
-        <input type="text" placeholder="Enter environment variable key" class="env-key">
-        <input type="text" placeholder="Enter environment variable value" class="env-value">
-        <button type="button" class="remove-env-var">Remove</button>
-      `;
-      const removeEnvVarButton = envVarDiv.querySelector('.remove-env-var');
-      removeEnvVarButton.addEventListener('click', () => envVarDiv.remove());
-      envVarsContainer.appendChild(envVarDiv);
-    });
-  }
-  
-  // Add first container form when the page loads
+// Select DOM Elements
+const addContainerButton = document.getElementById('add-container');
+const generateButton = document.getElementById('generate-button');
+const containersList = document.getElementById('containers-list');
+const yamlOutput = document.getElementById('yaml-output');
+
+// Add Container Form
+addContainerButton.addEventListener('click', () => {
   createContainerForm();
-  
-  // Add a new container form
-  document.getElementById('add-container').addEventListener('click', createContainerForm);
-  
-  // Generate YAML when the button is clicked
-  document.getElementById('generate-button').addEventListener('click', function() {
-    const containers = document.querySelectorAll('.container-item');
-    let yaml = `version: '3.8'\nservices:\n`;
-  
-    containers.forEach(container => {
-      const serviceName = container.querySelector('.service-name').value;
-      const image = container.querySelector('.image').value;
-      const port = container.querySelector('.port').value;
-      const hostPort = container.querySelector('.host-port').value;
-      const useVolume = container.querySelector('.use-volume').checked;
-      const volumeName = container.querySelector('.volume-name').value;
-      const useNetwork = container.querySelector('.use-network').checked;
-      const networkName = container.querySelector('.network-name').value;
-      
-      let containerYaml = `  ${serviceName}:\n`;
-      containerYaml += `    image: ${image}\n`;
-      if (port && hostPort) {
-        containerYaml += `    ports:\n      - "${hostPort}:${port}"\n`;
-      }
-      if (useVolume) {
-        containerYaml += `    volumes:\n      - ${volumeName}:/data\n`;
-      }
-      if (useNetwork) {
-        containerYaml += `    networks:\n      - ${networkName}\n`;
-      }
-      
-      const envVars = container.querySelectorAll('.env-var-input');
-      if (envVars.length > 0) {
-        containerYaml += `    environment:\n`;
-        envVars.forEach(envVar => {
-          const key = envVar.querySelector('.env-key').value;
-          const value = envVar.querySelector('.env-value').value;
-          if (key && value) {
-            containerYaml += `      - ${key}=${value}\n`;
-          }
-        });
-      }
-      
-      const command = container.querySelector('.command').value;
-      if (command) {
-        containerYaml += `    command: "${command}"\n`;
-      }
-      
-      yaml += containerYaml;
-    });
-  
-    yaml += `networks:\n  default:\n    external:\n      name: ${document.querySelector('.network-name').value || 'default'}\n`;
-    document.getElementById('yaml-output').textContent = yaml;
+  // Scroll to newly added container
+  setTimeout(() => {
+    const newContainer = containersList.lastElementChild;
+    newContainer.scrollIntoView({ behavior: 'smooth' });
+  }, 100);
+});
+
+// Generate Docker Compose YAML
+generateButton.addEventListener('click', generateDockerComposeYAML);
+
+// Function to Create Container Form
+function createContainerForm() {
+  const containerDiv = document.createElement('div');
+  containerDiv.classList.add('container-item');
+
+  // Service Name
+  const serviceNameDiv = createFormGroup('Service Name:', 'text', 'service-name', 'Enter service name');
+
+  // Select Image
+  const imageDiv = createFormGroup('Select Image:', 'select', 'image');
+  const imageOptions = ['nginx:latest', 'mysql:latest', 'redis:latest', 'node:latest', 'python:latest', 'alpine:latest'];
+  addOptionsToSelect(imageDiv.querySelector('select'), imageOptions);
+
+  // Port Mapping
+  const portDiv = createFormGroup('Port Mapping:', 'number', 'port', 'Enter container port');
+  const hostPortDiv = createFormGroup('Host Port:', 'number', 'host-port', 'Enter host port');
+
+  // Volume Configuration
+  const volumeDiv = document.createElement('div');
+  volumeDiv.classList.add('form-group');
+  volumeDiv.innerHTML = `
+    <label for="use-volume">Use Volume:</label>
+    <input type="checkbox" class="use-volume">
+    <div class="volume-options hidden">
+      <label for="volume-name">Volume Name:</label>
+      <input type="text" class="volume-name" placeholder="Enter volume name">
+    </div>
+  `;
+
+  // Network Configuration
+  const networkDiv = document.createElement('div');
+  networkDiv.classList.add('form-group');
+  networkDiv.innerHTML = `
+    <label for="use-network">Use Network:</label>
+    <input type="checkbox" class="use-network">
+    <div class="network-options hidden">
+      <label for="network-name">Network Name:</label>
+      <input type="text" class="network-name" placeholder="Enter network name">
+    </div>
+  `;
+
+  // Environment Variables
+  const envDiv = document.createElement('div');
+  envDiv.classList.add('form-group');
+  envDiv.innerHTML = `
+    <label>Environment Variables:</label>
+    <div class="env-vars-container"></div>
+    <button type="button" class="add-env-var">Add Environment Variable</button>
+  `;
+  envDiv.querySelector('.add-env-var').addEventListener('click', addEnvVarInput);
+
+  // Resource Configuration
+  const resourceDiv = document.createElement('div');
+  resourceDiv.classList.add('form-group');
+  resourceDiv.innerHTML = `
+    <label for="use-resources">Configure Resources:</label>
+    <input type="checkbox" class="use-resources">
+    <div class="resource-options hidden">
+      <label for="cpu">CPU (cores):</label>
+      <input type="number" class="cpu" min="0" step="0.1" placeholder="Enter number of CPUs">
+      <label for="memory">Memory (MB):</label>
+      <input type="number" class="memory" min="0" placeholder="Enter memory in MB">
+    </div>
+  `;
+
+  // Replicas Configuration
+  const replicasDiv = createFormGroup('Replicas:', 'number', 'replicas', 'Enter number of replicas');
+
+  // Command Override
+  const commandDiv = createFormGroup('Override Command:', 'text', 'command', 'Enter command to override (optional)');
+
+  // Remove Container Button
+  const removeButton = document.createElement('button');
+  removeButton.classList.add('remove-container');
+  removeButton.textContent = 'Remove Container';
+  removeButton.addEventListener('click', () => {
+    containerDiv.classList.add('fade-out');
+    setTimeout(() => containerDiv.remove(), 300);
   });
-  
+
+  containerDiv.appendChild(serviceNameDiv);
+  containerDiv.appendChild(imageDiv);
+  containerDiv.appendChild(portDiv);
+  containerDiv.appendChild(hostPortDiv);
+  containerDiv.appendChild(volumeDiv);
+  containerDiv.appendChild(networkDiv);
+  containerDiv.appendChild(envDiv);
+  containerDiv.appendChild(resourceDiv);
+  containerDiv.appendChild(replicasDiv);
+  containerDiv.appendChild(commandDiv);
+  containerDiv.appendChild(removeButton);
+
+  containerDiv.classList.add('fade-in');
+  containersList.appendChild(containerDiv);
+
+  // Handle Volume and Network Toggle with animation
+  const volumeCheckbox = containerDiv.querySelector('.use-volume');
+  const volumeOptions = containerDiv.querySelector('.volume-options');
+  volumeCheckbox.addEventListener('change', () => {
+    toggleOptions(volumeOptions, volumeCheckbox.checked);
+  });
+
+  const networkCheckbox = containerDiv.querySelector('.use-network');
+  const networkOptions = containerDiv.querySelector('.network-options');
+  networkCheckbox.addEventListener('change', () => {
+    toggleOptions(networkOptions, networkCheckbox.checked);
+  });
+
+  const resourcesCheckbox = containerDiv.querySelector('.use-resources');
+  const resourceOptions = containerDiv.querySelector('.resource-options');
+  resourcesCheckbox.addEventListener('change', () => {
+    toggleOptions(resourceOptions, resourcesCheckbox.checked);
+  });
+}
+
+function toggleOptions(element, show) {
+  if (show) {
+    element.classList.remove('hidden');
+    element.classList.add('slide-down');
+  } else {
+    element.classList.add('slide-up');
+    setTimeout(() => element.classList.add('hidden'), 300);
+  }
+}
+
+// Helper Function to Create Form Groups
+function createFormGroup(labelText, inputType, className, placeholderText = '') {
+  const div = document.createElement('div');
+  div.classList.add('form-group');
+  div.innerHTML = `
+    <label for="${className}">${labelText}</label>
+    ${inputType === 'select' ? `<select class="${className}"></select>` : `<input type="${inputType}" class="${className}" placeholder="${placeholderText}">`}
+  `;
+  return div;
+}
+
+// Function to Add Options to Select Element
+function addOptionsToSelect(selectElement, optionsArray) {
+  optionsArray.forEach(option => {
+    const optionElement = document.createElement('option');
+    optionElement.value = option;
+    optionElement.textContent = option;
+    selectElement.appendChild(optionElement);
+  });
+}
+
+// Function to Add Environment Variable Inputs
+function addEnvVarInput(event) {
+  const containerDiv = event.target.closest('.container-item');
+  const envVarsContainer = containerDiv.querySelector('.env-vars-container');
+
+  const envVarDiv = document.createElement('div');
+  envVarDiv.classList.add('env-var-input', 'fade-in');
+  envVarDiv.innerHTML = `
+    <input type="text" class="env-key" placeholder="Enter key">
+    <input type="text" class="env-value" placeholder="Enter value">
+    <button type="button" class="remove-env-var">Remove</button>
+  `;
+
+  envVarDiv.querySelector('.remove-env-var').addEventListener('click', () => {
+    envVarDiv.classList.add('fade-out');
+    setTimeout(() => envVarDiv.remove(), 300);
+  });
+
+  envVarsContainer.appendChild(envVarDiv);
+}
+
+// Function to Generate Docker Compose YAML
+function generateDockerComposeYAML() {
+  const containers = document.querySelectorAll('.container-item');
+  const dockerCompose = {
+    version: '3',
+    services: {}
+  };
+
+  containers.forEach(container => {
+    const serviceName = container.querySelector('.service-name').value;
+    const image = container.querySelector('.image').value;
+    const port = container.querySelector('.port').value;
+    const hostPort = container.querySelector('.host-port').value;
+    const useVolume = container.querySelector('.use-volume').checked;
+    const volumeName = container.querySelector('.volume-name')?.value;
+    const useNetwork = container.querySelector('.use-network').checked;
+    const networkName = container.querySelector('.network-name')?.value;
+    const useResources = container.querySelector('.use-resources').checked;
+    const cpu = container.querySelector('.cpu')?.value;
+    const memory = container.querySelector('.memory')?.value;
+    const replicas = container.querySelector('.replicas')?.value;
+    const command = container.querySelector('.command')?.value;
+    const envVars = [];
+    
+    container.querySelectorAll('.env-var-input').forEach(envVar => {
+      const key = envVar.querySelector('.env-key').value;
+      const value = envVar.querySelector('.env-value').value;
+      if (key && value) {
+        envVars.push({ key, value });
+      }
+    });
+
+    if (serviceName && image) {
+      dockerCompose.services[serviceName] = {
+        image,
+        ...(port && hostPort && { ports: [`${hostPort}:${port}`] }),
+        ...(useVolume && volumeName && { volumes: [`${volumeName}:/data`] }),
+        ...(useNetwork && networkName && { networks: [networkName] }),
+        ...(useResources && (cpu || memory) && {
+          deploy: {
+            resources: {
+              limits: {
+                ...(cpu && { cpus: cpu }),
+                ...(memory && { memory: `${memory}M` })
+              }
+            },
+            ...(replicas && { replicas: parseInt(replicas) })
+          }
+        }),
+        ...(command && { command: command.split(' ') }),
+        ...(envVars.length > 0 && {
+          environment: envVars.reduce((envObj, { key, value }) => {
+            envObj[key] = value;
+            return envObj;
+          }, {})
+        })
+      };
+    }
+  });
+
+  yamlOutput.textContent = JSON.stringify(dockerCompose, null, 2);
+  yamlOutput.classList.add('highlight');
+  setTimeout(() => yamlOutput.classList.remove('highlight'), 500);
+}
